@@ -28,5 +28,5 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # ќбъ€вл€ем тесты
-add_executable(graph_table_tests "tests/graph_tests.cpp")
-target_link_libraries(graph_table_tests my_graph GTest::gtest_main)
+add_executable(graph_tests "tests/graph_tests.cpp")
+target_link_libraries(graph_tests my_graph GTest::gtest_main)
