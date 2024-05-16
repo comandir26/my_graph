@@ -5,6 +5,7 @@
 #include<utility>
 #include<queue>
 #include<stack>
+#include<functional>
 
 namespace graph {
 	template<class Vertex, class Distance = double>
@@ -40,6 +41,7 @@ namespace graph {
 			}
 			return vertices;
 		}
+
 		void add_edge(const Vertex& from, const Vertex& to, const Distance& d) {
 			if (!has_vertex(from) || !has_vertex(to)) return;
 			_data[from].push_back(std::make_pair(to, d));
@@ -48,25 +50,37 @@ namespace graph {
 		bool remove_edge(const Vertex& from, const Vertex& to) {
 			if (!has_vertex(from) || !has_vertex(to)) return false;
 			auto it = _data[from].begin();
-			while (it != _data[from].end() && it->first != to) ++it;
+			while (it != _data[from].end()) {
+				if (it->first == to) {
+					_data[from].erase(it);
+					it = _data[from].begin();
+					continue;
+				}
+				++it;
+			}
+			return true;
+		}
+		bool remove_edge(const Vertex& from, const Vertex& to, const Distance& d) {
+			if (!has_vertex(from) || !has_vertex(to)) return false;
+			auto it = _data[from].begin();
+			while (it != _data[from].end() && it->first != to && it->second != d) ++it;
 			if (it == _data[from].end()) return false;
 			_data[from].erase(it);
 			return true;
 		}
-		/*
-		bool remove_edge(const std::pair<Vertex, Distance>& e) {//c учетом расстояния
-			return true;
-		}*/
 		bool has_edge(const Vertex& from, const Vertex& to) const {
 			if (!has_vertex(from) || !has_vertex(to)) return false;
 			auto it = _data.at(from).begin();
 			while (it != _data.at(from).end() && it->first != to) ++it;
 			return it != _data.at(from).end();
 		}
-		/*
-		bool has_edge(const std::pair<Vertex, Distance>& e) const {//c учетом расстояния в Edge
-			return true
-		}*/
+		
+		bool has_edge(const Vertex& from, const Vertex& to, const Distance& d) const {
+			if (!has_vertex(from) || !has_vertex(to)) return false;
+			auto it = _data.at(from).begin();
+			while (it != _data.at(from).end() && !(it->first == to && it->second == d)) ++it;
+			return it != _data.at(from).end();
+		}
 		std::vector<std::pair<Vertex, Distance>> edges(const Vertex& v) const {
 			std::vector<std::pair<Vertex, Distance>> edges;
 			for (auto& e : _data.at(v)) {
@@ -84,10 +98,6 @@ namespace graph {
 		std::vector<Vertex> walk(const Vertex& start_vertex){
 			std::unordered_map<Vertex, bool> visited;
 			std::vector<Vertex> walk;
-			/*for (size_t i = 0; i < _data.size(); ++i)
-			{
-				visited[i] = false;
-			}*/
 			std::queue<Vertex> queue;
 			queue.push(start_vertex);
 			while (!queue.empty()) {
@@ -105,42 +115,69 @@ namespace graph {
 		}
 
 		std::vector<std::pair<Vertex, Distance>> shortest_path(const Vertex& from, const Vertex& to)  {
-			std::unordered_map<Vertex, std::pair<Distance, Vertex>> dist_pred;
-			std::vector<std::pair<Distance, Vertex>> path;
+			std::unordered_map<Vertex, std::pair<Vertex, Distance>> dist_pred;
+			std::vector<std::pair<Vertex, Distance>> path;
 			std::vector<Vertex> vertices = this->vertices();
 			for (auto& e : vertices) {
-				dist_pred[e] = std::make_pair(1e9, -1);
+				dist_pred[e] = std::make_pair(-1, 1e9);
 			}
-			dist_pred[from] = std::make_pair(0, -1);
+			dist_pred[from] = std::make_pair(-1, 0);
 			std::stack<int> stack;
 			stack.push(from);
 			while (!stack.empty()) {
 				Vertex u = stack.top();
 				stack.pop();
 				for (auto& v: _data.at(u)){
-					stack.push(v.first);
-					relax(u, v.first, dist_pred);
+					if(relax(u, v.first, dist_pred)) stack.push(v.first);
 				}
 			}
 			Vertex finish = to;
-			std::pair<Distance, Vertex> pred = dist_pred.at(finish);
-			while (finish != from) {
-				path.insert(path.begin(), std::make_pair(pred.first, finish));
-				finish = pred.second;
-				pred = dist_pred.at(finish);
+			std::pair<Vertex, Distance> pred = dist_pred.at(finish);
+			if (pred.second == 1e9) {
+				path.insert(path.begin(), std::make_pair(finish, pred.second));
 			}
-			path.insert(path.begin(), std::make_pair(0, from));
+			else {
+				while (finish != from) {
+					path.insert(path.begin(), std::make_pair(finish, pred.second));
+					finish = pred.first;
+					pred = dist_pred.at(finish);
+				}
+			}
+			path.insert(path.begin(), std::make_pair(from, 0));
 			return path;
 		}
+		const Vertex& optimal_point() {
+			std::vector<Vertex> vertices = this->vertices();
+			Vertex warehouse = Vertex();
+			Distance max = 1e9;
+			for (auto& from : vertices) {
+				Distance current_max = 0.0;
+				Vertex current_warehouse = Vertex();
+				for (auto& to : vertices) {
+					std::vector<std::pair<Vertex, Distance>> path = shortest_path(from, to);
+					Distance d = (path.end() - 1)->second;
+					if (d > current_max && d != 1e9) {
+						current_max = d;
+					}
+				}
+				if (current_max != 0.0 && current_max < max) {
+					warehouse = from;
+					max = current_max;
+				}
+			}
+			return warehouse;
+		}
 	private:
-		void relax(const Vertex& u, const Vertex& v, std::unordered_map<Vertex, 
-			std::pair<Distance, Vertex>>& dist_pred) {
+		bool relax(const Vertex& u, const Vertex& v, std::unordered_map<Vertex, 
+			std::pair<Vertex, Distance>>& dist_pred) {
 			auto from_u = _data.at(u).begin();
 			while (from_u->first != v) ++from_u;
-			if (dist_pred.at(v).first > dist_pred.at(u).first + from_u->second) {
-				dist_pred.at(v).first = dist_pred.at(u).first + from_u->second;
-				dist_pred.at(v).second = u;
+			if (dist_pred.at(v).second > dist_pred.at(u).second + from_u->second) {
+				dist_pred.at(v).second = dist_pred.at(u).second + from_u->second;
+				dist_pred.at(v).first = u;
+				return true;
 			}
+			return false;
 		}
 		std::unordered_map<Vertex, std::vector<std::pair<Vertex, Distance>>> _data;
 	};
