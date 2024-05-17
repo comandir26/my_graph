@@ -18,6 +18,29 @@ TEST(vertexes, first) {
 	ASSERT_FALSE(graph.has_vertex(4));
 }
 
+TEST(remove_vertex, second) {
+	Graph<int, int> graph;
+	graph.add_vertex(0);
+	graph.add_vertex(1);
+	graph.add_vertex(2);
+	graph.add_vertex(3);
+	graph.add_vertex(4);
+	graph.add_vertex(5);
+	graph.add_edge(0, 1, 4);
+	graph.add_edge(0, 2, 3);
+	graph.add_edge(0, 3, 4);
+	graph.add_edge(0, 4, 5);
+	graph.add_edge(0, 5, 1);
+	graph.add_edge(5, 0, 1);
+	graph.add_edge(5, 1, 1);
+	graph.add_edge(5, 2, 1);
+	graph.add_edge(5, 3, 1);
+	graph.add_edge(5, 4, 1);
+	graph.print();
+	ASSERT_TRUE(graph.remove_vertex(5));
+	graph.print();
+}
+
 TEST(vertices, first) {
 	Graph<int, int> graph;
 	graph.add_vertex(0);
@@ -70,12 +93,15 @@ TEST(edges, first) {
 	graph.add_edge(2, 3, 1);
 	graph.add_edge(3, 4, 4);
 	graph.add_edge(4, 1, 16);
+	graph.print();
 	ASSERT_TRUE(graph.has_edge(0, 5));
 	ASSERT_TRUE(graph.remove_edge(0, 5));
 	ASSERT_FALSE(graph.has_edge(0, 5));
 	ASSERT_FALSE(graph.has_edge(0, 5, 5));
 	ASSERT_FALSE(graph.has_edge(0, 5, 50));
-	ASSERT_TRUE(graph.has_edge(4, 1, 16));
+	ASSERT_TRUE(graph.remove_edge(4, 1, 16));
+	ASSERT_FALSE(graph.has_edge(4, 1, 16));
+	graph.print();
 }
 
 TEST(vector_edges, first) {

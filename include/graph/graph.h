@@ -18,10 +18,28 @@ namespace graph {
 			return _data.contains(v);
 		}
 		void add_vertex(const Vertex& v) {
-			_data.insert({ v, std::vector<std::pair<Vertex, Distance>>() });
+			_data.insert(std::make_pair(v, std::vector<std::pair<Vertex, Distance>>()));
 		}
 		bool remove_vertex(const Vertex& v) {
-			return _data.erase(v);
+			if (!has_vertex(v)) return false;
+			for (size_t i = 0; i < _data.size(); ++i)
+			{
+				if (i == v) continue;
+				int j = 0;
+				auto it = _data[i].begin();
+				while (it != _data[i].end()) {
+					if (it->first == v) {
+						_data[i].erase(it);
+						it = _data[i].begin() + j;
+					}
+					else {
+						++it;
+						++j;
+					}
+				}
+			}
+			_data.erase(v);
+			return true;
 		}
 		void print() const {
 			for (auto& v : _data) {
@@ -50,13 +68,16 @@ namespace graph {
 		bool remove_edge(const Vertex& from, const Vertex& to) {
 			if (!has_vertex(from) || !has_vertex(to)) return false;
 			auto it = _data[from].begin();
+			int i = 0;
 			while (it != _data[from].end()) {
 				if (it->first == to) {
 					_data[from].erase(it);
-					it = _data[from].begin();
-					continue;
+					it = _data[from].begin() + i; 
 				}
-				++it;
+				else {
+					++it;
+					++i;
+				}
 			}
 			return true;
 		}
@@ -92,11 +113,16 @@ namespace graph {
 			return _data.at(v).size();
 		}
 		size_t order() const {
-			return _data.size();//порядок - кол-во вершин
+			return _data.size();
 		}
 
 		std::vector<Vertex> walk(const Vertex& start_vertex){
-			std::unordered_map<Vertex, bool> visited;
+			//std::unordered_map<Vertex, bool> visited;
+			std::vector<bool> visited;
+			for (size_t i = 0; i < _data.size(); i++)
+			{
+				visited.push_back(false);
+			}
 			std::vector<Vertex> walk;
 			std::queue<Vertex> queue;
 			queue.push(start_vertex);
@@ -118,11 +144,11 @@ namespace graph {
 			std::unordered_map<Vertex, std::pair<Vertex, Distance>> dist_pred;
 			std::vector<std::pair<Vertex, Distance>> path;
 			std::vector<Vertex> vertices = this->vertices();
+			std::stack<int> stack;
 			for (auto& e : vertices) {
 				dist_pred[e] = std::make_pair(-1, 1e9);
 			}
 			dist_pred[from] = std::make_pair(-1, 0);
-			std::stack<int> stack;
 			stack.push(from);
 			while (!stack.empty()) {
 				Vertex u = stack.top();
